@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+  <title>NanoLeaf Controller Demo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="Title">
+
+      <!-- Optional preconfigured APIurl using the select options -->
+      <!-- <label for="APIurl">Choose EndPoint: </label>
+        <select name="APIurl" id="APIurl">
+          <option value="No URL selected">NONE</option>
+          <option value="http://[NanoLeaf IP ADRESS]:16021/api/v1/[NanoLeaf API KEY]">Nano 1</option>
+        </select> -->
+
+      <label for="APIurl">Choose EndPoint: </label>
+      <input id="nanoIP" placeholder="NanoLeaf IP adress">
+      <input id="nanoKey" placeholder="NanoLeaf API key">
+
+      <button id=FaseOne style="visibility:shown;" onclick="GetNanoInfo()">Connect</button>
+      <button id=FaseTwo style="visibility:hidden;" onclick="window.location.reload();">RESET</button>
+    </div>
+    <div class="Table1">
+      <table class="table">
+        <thead>
+          <tr class="TableHeader">
+            <th>Object</th>
+            <th>Response</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="TableOdd">
+            <td>Name</td>
+            <td id="name"></td>
+          </tr>
+          <tr class="TableEven">
+            <td>SN</td>
+            <td id="serial"></td>
+          </tr>
+          <tr class="TableOdd">
+            <td>Brand</td>
+            <td id="brand"></td>
+          </tr>
+          <tr class="TableEven">
+            <td>Firmware</td>
+            <td id="firm"></td>
+          </tr>
+          <tr class="TableOdd">
+            <td>Hardware</td>
+            <td id="hard"></td>
+          </tr>
+          <tr class="TableEven">
+            <td>Model</td>
+            <td id="model"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="Table2">
+      <table class="table">
+        <thead>
+          <tr class="TableHeader">
+            <th>Object</th>
+            <th>Response</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="TableOdd">
+            <td>PanelCount</td>
+            <td id="panels"></td>
+          </tr>
+          <tr class="TableEven">
+            <td>Is On</td>
+            <td id="stateOn"></td>
+          </tr>
+          <tr class="TableOdd">
+            <td>Dimmer</td>
+            <td id="brightness"></td>
+          </tr>
+          <tr class="TableEven">
+            <td>ColorMode</td>
+            <td id="colormode"></td>
+          </tr>
+          <tr class="TableOdd">
+            <td>Active effect</td>
+            <td id="activeEffects"></td>
+          </tr>
+          <tr class="TableEven">
+            <td>-</td>
+            <td>no info</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="Messages">
+      <!-- Insert Code -->
+    </div>
+    <div class="ControlSpace">
+      <div id="FaseTwoDiv" style="visibility:hidden;" id="control">
+        <h3>Lamp controle</h3>
+        <button onclick="turnOn()">Zet aan</button>
+        <button onclick="turnOff()">Zet uit</button>
+
+        <h3>Brightness</h3>
+        <div>
+          <form>
+            <input type="range" id="BrightSet" name="volume" min="0" max="100" value="0" step="10">
+            <label for="volume">Brightness 0>100</label>
+
+            <input type="range" id="FadeSet" name="cowbell" min="0" max="10" value="0" step="1">
+            <label for="cowbell">Seconden 0>10</label>
+            <br>
+            <input type="button" value="Stuur waarden" onclick="IntensFade()" />
+          </form>
+
+        </div>
+      </div>
+    </div>
+</body>
+
+</html>
+
+<style>
+  html {
+    height: 100%;
+  }
+
+  body {
+    background-color: aliceblue;
+    font-family: Arial, Helvetica, sans-serif;
+    height: 99%;
+  }
+
+  .container {
+    display: grid;
+    height: 90%;
+    grid-template-columns: 0.1fr 1fr 1fr 0.1fr;
+    grid-template-rows: 0.1fr 0.1fr 0.5fr 0.2fr 4fr 0.2fr;
+    grid-auto-columns: 1fr;
+    gap: 10px 0px;
+    grid-auto-flow: row;
+    grid-template-areas:
+      ". . . ."
+      ". Title Title ."
+      ". Table1 Table2 ."
+      ". Messages Messages ."
+      ". ControlSpace ControlSpace ."
+      ". . . .";
+  }
+
+  .Title {
+    grid-area: Title;
+    text-align: center;
+  }
+
+  .Table1 {
+    grid-area: Table1;
+    border-right: #8b8b8b solid 0.5px;
+  }
+
+  .Table2 {
+    grid-area: Table2;
+    border-left: #8b8b8b solid 0.5px;
+  }
+
+  .Messages {
+    grid-area: Messages;
+    border-top: black solid 0.5px;
+  }
+
+  .ControlSpace {
+    grid-area: ControlSpace;
+    border-top: black solid 0.5px;
+    padding-top: 5px;
+    background-color: white;
+    box-shadow: inset 0px 0px 10px rgba(0, 0, 0, 0.5);
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+
+  .TableHeader {
+    background-color: #8b8b8b;
+    color: white;
+    width: 50%
+  }
+
+  .TableOdd {
+    background-color: #ffffff;
+  }
+
+  .TableEven {
+    background-color: #c2c2c2;
+  }
+</style>
+
+<script>
+  // Preconfigure the url variable to be able to use it in all functions
+  var url = "No URL selected";
+
+  // Fun console log message
+  console.log('%cNanoleaf', 'font-weight: bold; font-size: 50px;color: red; text-shadow: 3px 3px 0 rgb(217,31,38) , 6px 6px 0 rgb(226,91,14) , 9px 9px 0 rgb(245,221,8) , 12px 12px 0 rgb(5,148,68) , 15px 15px 0 rgb(2,135,206) , 18px 18px 0 rgb(4,77,145) , 21px 21px 0 rgb(42,21,113)');
+  console.log("API Control interface by: Ian van Vliet");
+  console.log(url);
+
+  function GetNanoInfo() {
+
+    // Optional preconfigured APIurl using the select options above
+    // var APIurl = document.getElementById("APIurl").value;
+
+    // Generate APIurl from IP and Key
+    var NanoIP = document.getElementById("nanoIP").value;
+    var NanoKey = document.getElementById("nanoKey").value
+    var APIurl = "http://" + NanoIP + ":16021/api/v1/" + NanoKey;
+
+    // Set request URL
+    var url = APIurl;
+
+    if (APIurl === "No URL selected") {
+      console.log("%cSelected APIurl = " + APIurl, "color:red");
+      ClearNanoInfo()
+    } else {
+      console.log("%cDataREQ send to: " + APIurl, "color:orange");
+
+      ConnectionREQ()
+      xhr = new XMLHttpRequest();
+      xhr.open("GET", url);
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status == 200) {
+          console.log(xhr.status);
+
+          NanoJson = xhr.responseText;
+          const NanoData = JSON.parse(NanoJson);
+          console.log(NanoData);
+
+          document.getElementById("name").innerHTML = NanoData.name
+          document.getElementById("serial").innerHTML = NanoData.serialNo
+          document.getElementById("brand").innerHTML = NanoData.manufacturer
+          document.getElementById("firm").innerHTML = NanoData.firmwareVersion
+          document.getElementById("hard").innerHTML = NanoData.hardwareVersion
+          document.getElementById("model").innerHTML = NanoData.model
+
+          document.getElementById("panels").innerHTML = NanoData.panelLayout.layout.numPanels
+          document.getElementById("stateOn").innerHTML = NanoData.state.on.value
+          document.getElementById("brightness").innerHTML = NanoData.state.brightness.value + "%"
+          document.getElementById("colormode").innerHTML = NanoData.state.colorMode
+          document.getElementById("activeEffects").innerHTML = NanoData.effects.select
+
+          ConnectionOK()
+        }
+        else {
+          ConnectionERR();
+        }
+      };
+      xhr.send();
+    }
+  }
+
+  //Function to turn on lights
+  function turnOn() {
+
+    if (url === "No URL selected") {
+      console.log("%cNoURL Selected", "color:red");
+      ClearNanoInfo()
+    } else {
+      console.log("%cOn trigger send to: " + url, "color:orange");
+      ConnectionREQ()
+
+      var xhr = new XMLHttpRequest();
+      xhr.open("PUT", url);
+
+      xhr.setRequestHeader("Content-Type", "application/json");
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          console.log(xhr.status);
+          console.log(xhr.responseText);
+        }
+      };
+
+      var data = `{"on": {"value": true}}`;
+
+      xhr.send(data);
+
+      RefreshInfo()
+    }
+  }
+
+
+  //Funtion to turn off lights
+  function turnOff() {
+    loadingANI()
+    console.log("Off is triggered")
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4) {
+        console.log(xhr.status);
+        console.log(xhr.responseText);
+      }
+    };
+
+    var data = `{"on": {"value": false}}`;
+
+    xhr.send(data);
+
+    RefreshInfo()
+  }
+
+  //change brightness
+  function IntensFade() {
+    loadingANI()
+
+    var brightness = document.getElementById("BrightSet").value;
+    var duration = document.getElementById("FadeSet").value;
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4) {
+        console.log(xhr.status);
+        console.log(xhr.responseText);
+      }
+    };
+
+    var data = '{"brightness" : {"value":' + brightness + ', "duration":' + duration + '}}';
+
+    xhr.send(data);
+
+    RefreshInfo()
+  }
+
+
+  //Hulp Functies
+  function ConnectionREQ() { // Show loading animation
+    document.getElementById("name").innerHTML = "Making Request.."
+    document.getElementById("serial").innerHTML = "Making Request.."
+    document.getElementById("brand").innerHTML = "Making Request.."
+    document.getElementById("firm").innerHTML = "Making Request.."
+    document.getElementById("hard").innerHTML = "Making Request.."
+    document.getElementById("model").innerHTML = "Making Request.."
+    document.getElementById("panels").innerHTML = "Making Request.."
+    document.getElementById("stateOn").innerHTML = "Making Request.."
+    document.getElementById("brightness").innerHTML = "Making Request.."
+    document.getElementById("colormode").innerHTML = "Making Request.."
+    document.getElementById("activeEffects").innerHTML = "Making Request.."
+  }
+  function ConnectionERR() { // Show connection error
+    document.getElementById("name").innerHTML = "FAILED"
+    document.getElementById("serial").innerHTML = "FAILED"
+    document.getElementById("brand").innerHTML = "FAILED"
+    document.getElementById("firm").innerHTML = "FAILED"
+    document.getElementById("hard").innerHTML = "FAILED"
+    document.getElementById("model").innerHTML = "FAILED"
+    document.getElementById("panels").innerHTML = "FAILED"
+    document.getElementById("stateOn").innerHTML = "FAILED"
+    document.getElementById("brightness").innerHTML = "FAILED"
+    document.getElementById("colormode").innerHTML = "FAILED"
+    document.getElementById("activeEffects").innerHTML = "FAILED"
+  }
+  function ConnectionOK() { // Show connection OK
+    document.getElementById("FaseOne").style.visibility = "hidden";
+    document.getElementById("FaseTwo").style.visibility = "visible";
+    document.getElementById("FaseTwoDiv").style.visibility = "visible";
+  }
+  function RefreshInfo() { //Rerun @ start
+    setTimeout(function () {
+      GetNanoInfo();
+    }, 2000);
+  }
+  function ClearNanoInfo() { //Clear Info fields
+    document.getElementById("name").innerHTML = ""
+    document.getElementById("serial").innerHTML = ""
+    document.getElementById("brand").innerHTML = ""
+    document.getElementById("firm").innerHTML = ""
+    document.getElementById("hard").innerHTML = ""
+    document.getElementById("model").innerHTML = ""
+    document.getElementById("panels").innerHTML = ""
+    document.getElementById("stateOn").innerHTML = ""
+    document.getElementById("brightness").innerHTML = ""
+    document.getElementById("colormode").innerHTML = ""
+    document.getElementById("activeEffects").innerHTML = ""
+  }
+</script>
